@@ -95,6 +95,8 @@ The conditions are `SourceValid`, `RouteApplied`, `DependenciesResolved`, and `R
 
 On failure, `sourceDigest` updates (the new source was observed) but `planDigest` stays at the last applied plan. A mismatch between them is therefore visible.
 
+*Implementation note (tasks 9.1 and 8.3): status reads bypass the cache.* On GKE the informer cache was seen missing status-subresource writes until a restart. That covered Envoy Gateway's writes on the route and sometimes the operator's own writes on the OpenAPIRoute, and it left `Ready=Pending` for routes Accepted for their current generation. The reconciler now reads the OpenAPIRoute at the start of each reconcile, and the route and Gateway in `setReady`, through the manager's uncached `APIReader`. While Ready is `Pending` or `GatewayNotProgrammed` it requeues every 5 s; failures that need a change do not requeue. Verified with a drift-repair stress loop: before the fix, 2–3 of 10 repairs stalled for 30 s or more; after it, 20 of 20 converged within 1 s. Two consecutive acceptance runs then passed 24/24.
+
 ### 8. Leader election across local and in-cluster runs
 Both `make run` and the Deployment use lease `openapi-route-operator` in `flights-lab`. A developer running locally while the deployment is up waits for the lease rather than fighting it. The documented local loop is to scale the Deployment to zero first.
 

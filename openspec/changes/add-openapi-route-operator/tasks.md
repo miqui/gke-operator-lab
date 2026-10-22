@@ -64,9 +64,9 @@
 
 ## 9. Integration and wrap-up
 
-- [ ] 9.1 Run the full sequence from the design's migration plan on the dev cluster, from the CRD preflight through `make test-e2e`. Verify that everything passes in one run, and record the operator image digest and versions in README.md.
-- [ ] 9.2 Walk through the APIOps example from PLAN.md by hand (add `DELETE /flights/{flightId}`, bind it, publish, curl). Verify that the request reaches flight-command.
-- [ ] 9.3 Remove the superseded `openspec/changes/add-envoy-flights-gateway/` change. Verify that `openspec list` shows only this change and that `openspec validate add-openapi-route-operator --strict` passes.
+- [x] 9.1 Run the full sequence from the design's migration plan on the dev cluster, from the CRD preflight through `make test-e2e`. Verify that everything passes in one run, and record the operator image digest and versions in README.md.
+- [x] 9.2 Walk through the APIOps example from PLAN.md by hand (add `DELETE /flights/{flightId}`, bind it, publish, curl). Verify that the request reaches flight-command.
+- [x] 9.3 Remove the superseded `openspec/changes/add-envoy-flights-gateway/` change. Verify that `openspec list` shows only this change and that `openspec validate add-openapi-route-operator --strict` passes.
 
 ## Workflow follow-up
 

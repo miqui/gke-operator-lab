@@ -351,8 +351,15 @@ The project is complete only when the operator is built, deployed, and shown to 
 
 On exercise removal, delete the sample custom resource first and verify route garbage collection, then remove fixture resources and the dedicated operator/runtime in dependency order. Retain the existing cluster, platform applications, unrelated routes, and shared/provider-managed CRDs. Deleting the operator CRD would delete all its custom resources, so make that a separate explicit uninstall action.
 
-## 11. Relationship to existing OpenSpec artifacts
+## 11. Relationship to OpenSpec artifacts
 
-The existing [add-envoy-flights-gateway proposal](openspec/changes/add-envoy-flights-gateway/proposal.md), [design](openspec/changes/add-envoy-flights-gateway/design.md), [runtime requirements](openspec/changes/add-envoy-flights-gateway/specs/envoy-gateway-runtime/spec.md), [flight requirements](openspec/changes/add-envoy-flights-gateway/specs/flights-routing-fixture/spec.md), and [tasks](openspec/changes/add-envoy-flights-gateway/tasks.md) describe only the earlier Envoy baseline and explicitly defer the operator.
+Phase 1 is implemented through the OpenSpec change `openspec/changes/add-openapi-route-operator/`
+(proposal, six capability specs, design, tasks). Its `design.md` records the decisions made during
+implementation, including ones that differ from the text above (for example the CRDs are
+server-side applied rather than a Helm release, and status-bearing reads bypass the informer
+cache); [ENVOY.md](ENVOY.md) and `src/openapi-route-operator/DEVELOPING.md` describe the result.
 
-They are not the complete implementation contract for this revised goal. Before implementing through OpenSpec, create a separate change (proposed `add-openapi-route-operator`) covering the operator, setup corrections, image delivery, and acceptance suite above, rather than stretching the existing change; do not claim the old 15-task checklist delivers the operator.
+The earlier `add-envoy-flights-gateway` change described only the Envoy baseline (reuse an existing
+cluster, reuse provider-managed CRDs, hand-written routes) and deferred the operator. It was
+superseded by `add-openapi-route-operator` and removed without being archived or synced, so none of
+its requirements reached `openspec/specs/`.
