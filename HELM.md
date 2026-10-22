@@ -37,3 +37,37 @@ https://charts.external-secrets.io, `crossplane-stable` https://charts.crossplan
 
 Bumping Argo CD's own chart: change `targetRevision` in `k8s/argocd/apps/argocd.yaml` **and**
 `ARGOCD_CHART_VERSION` in `gke-bootstrap.sh`, so fresh clusters start on the same version.
+
+## Envoy Gateway (operator exercise, installed with `helm`, not Argo CD)
+
+The OpenAPI route operator's Gateway runtime is installed from this branch with
+`k8s/envoy-gateway/install.sh`, outside Argo CD: the platform root watches another repository's
+`main`, and one owner per release is the rule (see PLAN.md §7D). So, unlike the table above,
+`helm list -n envoy-gateway-system` shows a real release (`eg`).
+
+| Component | Chart | Version | Values | Release |
+| --- | --- | --- | --- | --- |
+| Gateway API + Envoy Gateway CRDs | `oci://docker.io/envoyproxy/gateway-crds-helm` | v1.9.2 | `k8s/envoy-gateway/crds-values.yaml` | none: `helm template` + server-side apply, field manager `eg-crds` |
+| Envoy Gateway controller | `oci://docker.io/envoyproxy/gateway-helm` | v1.9.2 (installed with `--skip-crds`) | `k8s/envoy-gateway/values.yaml` | `eg` |
+
+Why these pins (checked 2026-10-22 against the [compatibility
+matrix](https://gateway.envoyproxy.io/news/releases/matrix/)): Envoy Gateway v1.9 supports
+Kubernetes v1.33-v1.36 and is built against **Gateway API v1.6.1**; the dev cluster runs
+v1.35.6 (GKE-OPS.md "Cluster facts"). The operator's `go.mod` pins the same Gateway API v1.6.1,
+and its envtest uses the matching standard-channel CRDs, so the operator, its tests, and the
+cluster agree on one API.
+
+- **Standard channel.** The CRD chart defaults to the experimental channel and to installing no
+  Gateway API CRDs at all; `crds-values.yaml` sets `gatewayAPI.enabled: true, channel: standard`.
+  The operator only emits standard HTTPRoute fields.
+- **The lab owns the Gateway API CRDs.** GKE's managed Gateway API is disabled at cluster creation
+  (`--gateway-api=disabled`); `install.sh` refuses to run if any Gateway API CRD exists that the
+  `eg-crds` field manager does not own. Deleting these CRDs deletes every Gateway API object in
+  the cluster, so it is a separate, explicit step (KUBECTL.md "Removing the exercise").
+- **Why not a Helm release for the CRDs.** The v1.9.2 bundle makes Helm's release Secret exceed
+  Kubernetes' 1 MiB object limit (`Secret "sh.helm.release.v1.eg-crds.v1" is invalid: data: Too
+  long`), which is why Envoy Gateway documents `helm template | kubectl apply --server-side`.
+  `install.sh` pulls the chart first and renders the local copy: Helm v4 prints `Pulled:` and
+  `Digest:` to stdout when rendering straight from a registry.
+- **Bumping.** Bump Envoy Gateway, the Gateway API version in the operator's `go.mod`, and the
+  matrix check together; then `make manifests` (re-copies the CRDs for envtest) and `make test`.

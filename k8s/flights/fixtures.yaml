@@ -1,0 +1,154 @@
+# Routing fixtures, not a flight service: each answers ANY method and path with its own name, the
+# method, and the raw request path, so a test can see exactly which backend Envoy chose and what
+# it forwarded. No persistence, no auth, no request validation (see README.md "Flights fixtures").
+# Unprivileged nginx: listens on 8080, writes only to /tmp, read-only root filesystem.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flight-fixtures-nginx
+  namespace: flights-lab
+data:
+  flight-query.conf: |
+    pid /tmp/nginx.pid;
+    error_log /dev/stderr warn;
+    events {}
+    http {
+      access_log /dev/stdout;
+      client_body_temp_path /tmp/client_body;
+      proxy_temp_path /tmp/proxy;
+      fastcgi_temp_path /tmp/fastcgi;
+      uwsgi_temp_path /tmp/uwsgi;
+      scgi_temp_path /tmp/scgi;
+      server {
+        listen 8080;
+        location / {
+          default_type application/json;
+          return 200 '{"backend":"flight-query","method":"$request_method","path":"$request_uri"}\n';
+        }
+      }
+    }
+  flight-command.conf: |
+    pid /tmp/nginx.pid;
+    error_log /dev/stderr warn;
+    events {}
+    http {
+      access_log /dev/stdout;
+      client_body_temp_path /tmp/client_body;
+      proxy_temp_path /tmp/proxy;
+      fastcgi_temp_path /tmp/fastcgi;
+      uwsgi_temp_path /tmp/uwsgi;
+      scgi_temp_path /tmp/scgi;
+      server {
+        listen 8080;
+        location / {
+          default_type application/json;
+          return 200 '{"backend":"flight-command","method":"$request_method","path":"$request_uri"}\n';
+        }
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flight-query
+  namespace: flights-lab
+  labels: { app: flight-query }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: flight-query }
+  template:
+    metadata:
+      labels: { app: flight-query }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: nginx
+          image: docker.io/library/nginx:1.31.6-alpine
+          command: ["nginx", "-c", "/etc/fixture/nginx.conf", "-g", "daemon off;"]
+          ports:
+            - { name: http, containerPort: 8080 }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits: { cpu: 100m, memory: 64Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          volumeMounts:
+            - { name: conf, mountPath: /etc/fixture/nginx.conf, subPath: flight-query.conf }
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: conf
+          configMap: { name: flight-fixtures-nginx }
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flight-query
+  namespace: flights-lab
+spec:
+  selector: { app: flight-query }
+  ports:
+    - { name: http, port: 8080, targetPort: http }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flight-command
+  namespace: flights-lab
+  labels: { app: flight-command }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: flight-command }
+  template:
+    metadata:
+      labels: { app: flight-command }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: nginx
+          image: docker.io/library/nginx:1.31.6-alpine
+          command: ["nginx", "-c", "/etc/fixture/nginx.conf", "-g", "daemon off;"]
+          ports:
+            - { name: http, containerPort: 8080 }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits: { cpu: 100m, memory: 64Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          volumeMounts:
+            - { name: conf, mountPath: /etc/fixture/nginx.conf, subPath: flight-command.conf }
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: conf
+          configMap: { name: flight-fixtures-nginx }
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flight-command
+  namespace: flights-lab
+spec:
+  selector: { app: flight-command }
+  ports:
+    - { name: http, port: 8080, targetPort: http }

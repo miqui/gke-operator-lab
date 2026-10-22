@@ -1,0 +1,24 @@
+# The flights API on the exercise Gateway. The operator compiles the document in ConfigMap
+# flights-openapi (published by flights-publish.sh) into HTTPRoute `flights`. Reads go to
+# flight-query; the writes are bound to flight-command by operationId.
+apiVersion: routing.lab.dev/v1alpha1
+kind: OpenAPIRoute
+metadata:
+  name: flights
+  namespace: flights-lab
+spec:
+  documentRef:
+    name: flights-openapi
+    key: openapi.yaml
+  parentRefs:
+    - name: flights
+  hostnames:
+    - flights.example.test
+  defaultBackendRef:
+    name: flight-query
+    port: 8080
+  operationBindings:
+    - operationId: createFlight
+      backendRef: { name: flight-command, port: 8080 }
+    - operationId: updateFlight
+      backendRef: { name: flight-command, port: 8080 }

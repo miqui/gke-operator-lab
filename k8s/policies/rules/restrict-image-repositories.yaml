@@ -34,7 +34,8 @@ spec:
           'docker.io/library/nginx',
           'docker.io/curlimages/curl',
           'ghcr.io/headlamp-k8s/headlamp',
-          'us-docker.pkg.dev/fairwinds-ops/oss/polaris'
+          'us-docker.pkg.dev/fairwinds-ops/oss/polaris',
+          'us-central1-docker.pkg.dev/dev1-486920/operator-lab/openapi-route-operator'
         ]
     # Canonical repository of every container. The single-element `[x].map(name, ...)[0]`
     # pattern is just CEL's way of binding a local name. Steps: drop @digest; drop :tag (a colon

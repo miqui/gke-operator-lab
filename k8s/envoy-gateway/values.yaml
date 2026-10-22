@@ -1,0 +1,7 @@
+# Values for oci://docker.io/envoyproxy/gateway-helm v1.9.2 (release eg), installed with
+# --skip-crds: CRDs come from the eg-crds release. See HELM.md.
+#
+# Chart defaults otherwise. The Envoy proxy's Service type is not set here; it is set per
+# GatewayClass by the EnvoyProxy in gatewayclass.yaml (ClusterIP), so no Gateway of this class
+# ever gets a cloud load balancer. Workload hardening (resources, policies) is phase 2.
+{}

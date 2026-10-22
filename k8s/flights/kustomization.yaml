@@ -1,0 +1,9 @@
+# The flights exercise: namespace, Gateway, and fixture backends. Apply after the Envoy runtime
+# (k8s/envoy-gateway/install.sh), before k8s/operator (which needs the namespace). The document is
+# published by ./flights-publish.sh and bound by k8s/flights/api, applied last.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - gateway.yaml
+  - fixtures.yaml

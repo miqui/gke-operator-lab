@@ -189,3 +189,33 @@ Don't widen the `headlamp` binding: every Headlamp login would become an admin l
 and, per workload, which built-in checks fail at `warning`/`danger`.
 - GKE-managed namespaces are exempt (`config.exemptions` in `k8s/polaris/polaris-values.yaml`).
 - Findings are advice. Anything that must be blocked belongs in a Kyverno policy.
+
+## OpenAPI route operator (flights exercise)
+
+An operator that keeps Envoy Gateway's routes in line with an OpenAPI 3.2 document: edit
+`examples/flights/openapi.yaml`, run `./flights-publish.sh`, and the generated HTTPRoute changes.
+Design and scope: [PLAN.md](PLAN.md) and `openspec/changes/add-openapi-route-operator/`. The API,
+status conditions, and safe-change rules: [the operator's README](src/openapi-route-operator/README.md).
+
+| Piece | Where |
+| --- | --- |
+| Operator (Go, Kubebuilder) | `src/openapi-route-operator/` |
+| Envoy Gateway runtime | `k8s/envoy-gateway/` ([HELM.md](HELM.md) "Envoy Gateway") |
+| Gateway, path policy, fixtures | `k8s/flights/` |
+| Flights contract | `examples/flights/openapi.yaml` |
+| Access and removal | [KUBECTL.md](KUBECTL.md) "Flights gateway" |
+
+### Flights fixtures
+
+`flight-query` and `flight-command` are **routing evidence, not a flight service**. Each answers
+every method and path with `{"backend", "method", "path"}`, so a request shows which backend Envoy
+chose and exactly what it forwarded. They have:
+
+- **no persistence**: POST and PATCH change nothing; GET returns no flight data;
+- **no authentication or authorization**;
+- **no request or response validation** against the OpenAPI schemas.
+
+The Gateway does not validate parameter formats either. `/flights/{flightId}` is a UUID in the
+contract, but the route matches any single non-empty path segment, so `/flights/not-a-uuid`
+reaches a backend. Validating it would be the backend's job. Nor does the route represent QUERY or
+custom (`additionalOperations`) methods: the operator rejects documents that use them.

@@ -1,0 +1,7 @@
+# The flights API binding (OpenAPIRoute). Applied last, after k8s/flights (namespace, Gateway,
+# fixtures), k8s/operator (its CRD), and ./flights-publish.sh (the document it reads). Changing a
+# binding is `kubectl apply -k k8s/flights/api`.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - openapiroute.yaml
