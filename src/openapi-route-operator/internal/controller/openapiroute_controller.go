@@ -83,19 +83,21 @@ const (
 	eventActionDelete           = "Delete"
 	conditionMessageTruncSuffix = " …(truncated)"
 
-	// pendingRequeue bounds how long Ready can lag the Gateway controller. Its status writes on
-	// the route and Gateway normally trigger a reconcile through the watches, but on GKE a
-	// status write landing in the same instant as the operator's own read was occasionally
-	// never followed by another reconcile, leaving Ready=Pending indefinitely. Waiting on
-	// another controller should not depend on a single event.
+	// pendingRequeue bounds how long Ready can lag the Gateway controller: while Ready waits on
+	// its status, reconcile again on this interval instead of depending on one watch event.
 	pendingRequeue = 5 * time.Second
 )
 
 // OpenAPIRouteReconciler keeps one generated HTTPRoute in line with an OpenAPIRoute's document.
 type OpenAPIRouteReconciler struct {
 	client.Client
-	Scheme   *runtime.Scheme
-	Recorder events.EventRecorder
+	// APIReader reads route and Gateway status for readiness straight from the API server.
+	// On GKE the informer cache was seen holding a route's status from before the Gateway
+	// controller's last write, indefinitely (until a restart), which left Ready=Pending for a
+	// route Accepted for its current generation. Defaults to Client when nil.
+	APIReader client.Reader
+	Scheme    *runtime.Scheme
+	Recorder  events.EventRecorder
 	// Limits defaults to compiler.DefaultLimits when zero.
 	Limits compiler.Limits
 }
@@ -341,6 +343,16 @@ func (r *OpenAPIRouteReconciler) setReady(ctx context.Context, owner *routingv1a
 		return notReady(ReasonPending, "route not yet applied")
 	}
 
+	// Re-read the route uncached: its status is written by the Gateway controller.
+	fresh := &gatewayv1.HTTPRoute{}
+	if err := r.statusReader().Get(ctx, client.ObjectKeyFromObject(route), fresh); err != nil {
+		if apierrors.IsNotFound(err) {
+			return notReady(ReasonPending, "route not yet applied")
+		}
+		return err
+	}
+	route = fresh
+
 	for _, p := range owner.Spec.ParentRefs {
 		ns, name, isGateway := gatewayKey(owner, p)
 		parent := findParentStatus(route, ns, name)
@@ -363,7 +375,7 @@ func (r *OpenAPIRouteReconciler) setReady(ctx context.Context, owner *routingv1a
 			continue
 		}
 		var gw gatewayv1.Gateway
-		if err := r.Get(ctx, types.NamespacedName{Namespace: ns, Name: name}, &gw); err != nil {
+		if err := r.statusReader().Get(ctx, types.NamespacedName{Namespace: ns, Name: name}, &gw); err != nil {
 			return client.IgnoreNotFound(err)
 		}
 		c := meta.FindStatusCondition(gw.Status.Conditions, gatewayProgrammedCondition)
@@ -374,6 +386,13 @@ func (r *OpenAPIRouteReconciler) setReady(ctx context.Context, owner *routingv1a
 	r.setCondition(owner, routingv1alpha1.ConditionReady, metav1.ConditionTrue, ReasonReady,
 		"HTTPRoute %s is accepted with resolved references, and its Gateways are programmed", route.Name)
 	return nil
+}
+
+func (r *OpenAPIRouteReconciler) statusReader() client.Reader {
+	if r.APIReader != nil {
+		return r.APIReader
+	}
+	return r.Client
 }
 
 func findParentStatus(route *gatewayv1.HTTPRoute, namespace, name string) *gatewayv1.RouteParentStatus {

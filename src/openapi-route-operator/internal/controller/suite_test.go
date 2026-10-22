@@ -135,9 +135,10 @@ func newManager(leaderElect bool, leaseID string) ctrl.Manager {
 func startManager() {
 	mgr := newManager(false, "")
 	Expect((&OpenAPIRouteReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorder("openapi-route-operator"),
+		Client:    mgr.GetClient(),
+		APIReader: mgr.GetAPIReader(),
+		Scheme:    mgr.GetScheme(),
+		Recorder:  mgr.GetEventRecorder("openapi-route-operator"),
 	}).SetupWithManager(mgr)).To(Succeed())
 
 	var mgrCtx context.Context
