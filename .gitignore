@@ -19,3 +19,8 @@ kubeconfig.yml
 
 ### Python helpers ###
 __pycache__/
+
+### Operator modules under src/ (build and test output; each module also ignores these) ###
+src/*/bin/
+src/*/cover.out
+src/*/test/e2e/artifacts/

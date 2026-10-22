@@ -24,7 +24,7 @@ PROJECT_ID="${PROJECT_ID:?PROJECT_ID is required, e.g. PROJECT_ID=dev1-486920 ./
 export CLOUDSDK_CORE_PROJECT="$PROJECT_ID"
 ZONE="${ZONE:-us-central1-a}"
 CLUSTER="${CLUSTER:-dev-cluster}"
-GITHUB_REPO="${GITHUB_REPO:-miqui/gke-ai-observer}"
+GITHUB_REPO="${GITHUB_REPO:-miqui/gke-operator-lab}"
 # Must match k8s/argocd/apps/argocd.yaml, which takes over this release after bootstrap.
 ARGOCD_CHART_VERSION="10.9.2"
 SYNC_TIMEOUT_MIN="${SYNC_TIMEOUT_MIN:-40}"

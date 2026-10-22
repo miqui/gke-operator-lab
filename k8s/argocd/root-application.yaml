@@ -18,7 +18,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/miqui/gke-ai-observer.git
+    repoURL: https://github.com/miqui/gke-operator-lab.git
     targetRevision: main
     path: k8s/argocd/apps
   destination:

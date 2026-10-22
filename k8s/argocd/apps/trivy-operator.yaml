@@ -15,7 +15,7 @@ metadata:
 spec:
   project: default
   sources:
-    - repoURL: https://github.com/miqui/gke-ai-observer.git
+    - repoURL: https://github.com/miqui/gke-operator-lab.git
       targetRevision: main
       ref: values
     - repoURL: https://aquasecurity.github.io/helm-charts/

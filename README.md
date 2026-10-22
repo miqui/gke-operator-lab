@@ -74,7 +74,7 @@ Google IAM, and binds on `127.0.0.1` only.
 Application (`k8s/argocd/root-application.yaml`). The root Application syncs every other
 Application from `k8s/argocd/apps/` ("app of apps"), Argo CD itself included. From then on, a
 version bump, a values change or a new manifest is a merged commit to
-`https://github.com/miqui/gke-ai-observer.git`. The repo must be public, because Argo CD clones it
+`https://github.com/miqui/gke-operator-lab.git`. The repo must be public, because Argo CD clones it
 anonymously.
 
 | Wave | Application | Source |
@@ -135,7 +135,7 @@ op run --env-file=.env -- ./gke-secrets-seed.sh
 ./gke-port-forward.sh
 ```
 
-**Before the first run:** push this repo to `github.com/miqui/gke-ai-observer` (public), branch
+**Before the first run:** push this repo to `github.com/miqui/gke-operator-lab` (public), branch
 `main`. Argo CD syncs from there, not from your working copy. `gke-bootstrap.sh` checks that the
 repo is readable and warns about unpushed commits.
 
