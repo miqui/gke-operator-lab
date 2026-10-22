@@ -56,7 +56,11 @@ GATEWAY_API_CRDS ?= test/crds/gateway-api
 .PHONY: gateway-api-crds
 gateway-api-crds: ## Copy the go.mod-pinned Gateway API standard CRDs into test/crds/gateway-api.
 	@rm -rf "$(GATEWAY_API_CRDS)" && mkdir -p "$(GATEWAY_API_CRDS)"
-	@cp "$$(go list -m -f '{{.Dir}}' sigs.k8s.io/gateway-api)"/config/crd/standard/*.yaml "$(GATEWAY_API_CRDS)/"
+	@# `go mod download -json` fetches the module if needed and prints its Dir; `go list -m` prints
+	@# an empty Dir when the module is not yet in the cache (e.g. a fresh CI runner).
+	@dir=$$(go mod download -json sigs.k8s.io/gateway-api | sed -n 's/^[[:space:]]*"Dir": "\(.*\)",*$$/\1/p'); \
+		test -n "$$dir" || { echo "could not locate sigs.k8s.io/gateway-api module" >&2; exit 1; }; \
+		cp "$$dir"/config/crd/standard/*.yaml "$(GATEWAY_API_CRDS)/"
 	@chmod u+w "$(GATEWAY_API_CRDS)"/*.yaml
 
 .PHONY: generate
