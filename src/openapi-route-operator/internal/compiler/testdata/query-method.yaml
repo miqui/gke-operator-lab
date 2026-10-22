@@ -1,0 +1,10 @@
+openapi: 3.2.0
+info: { title: query method, version: '1' }
+paths:
+  /flights/search:
+    query:
+      operationId: searchFlights
+      responses: { '200': { description: ok } }
+    get:
+      operationId: listSearches
+      responses: { '200': { description: ok } }

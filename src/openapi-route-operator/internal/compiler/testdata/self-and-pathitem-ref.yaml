@@ -1,0 +1,12 @@
+openapi: 3.2.0
+$self: https://api.example.test/flights/openapi.yaml
+info: { title: self and path item refs, version: '1' }
+paths:
+  /flights:
+    $ref: '#/components/pathItems/FlightCollection'
+components:
+  pathItems:
+    FlightCollection:
+      get:
+        operationId: listFlights
+        responses: { '200': { description: ok } }

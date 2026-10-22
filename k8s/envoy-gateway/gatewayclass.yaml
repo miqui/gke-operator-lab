@@ -1,0 +1,26 @@
+# The exercise's GatewayClass. Its EnvoyProxy makes every proxy Service ClusterIP from the moment
+# a Gateway is created, so no transient public LoadBalancer is ever provisioned. Access is a
+# loopback port-forward (ENVOY.md "Reaching the Gateway").
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: flights-clusterip
+  namespace: envoy-gateway-system
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyService:
+        type: ClusterIP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: flights-envoy
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+  parametersRef:
+    group: gateway.envoyproxy.io
+    kind: EnvoyProxy
+    name: flights-clusterip
+    namespace: envoy-gateway-system

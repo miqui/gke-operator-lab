@@ -1,0 +1,5 @@
+openapi: 3.2.0
+info: { title: external file ref, version: '1' }
+paths:
+  /flights:
+    $ref: './other.yaml#/components/pathItems/Flights'

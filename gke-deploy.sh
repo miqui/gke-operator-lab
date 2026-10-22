@@ -7,8 +7,10 @@
 #   - Zonal cluster (no HA): 1 managed control plane, e2-standard-2 workers, autoscaling 3..5
 #   - Dedicated VPC + subnet with Private Google Access
 #   - Private nodes (no external IPs); control plane locked to operator's IP
-#   - Cloud Router + Cloud NAT for node/pod egress (all images are public: ghcr.io, Docker Hub, ...)
+#   - Cloud Router + Cloud NAT for node/pod egress (third-party images are public: ghcr.io, Docker Hub, ...)
+#   - Artifact Registry Docker repository for first-party images; nodes may read only that repository
 #   - Dataplane V2 (NetworkPolicy enforcement), Workload Identity, Shielded Nodes
+#   - GKE's managed Gateway API disabled: Gateway API CRDs are installed and owned in-cluster
 #   - Dedicated least-privilege node service account (not the Editor-role default compute SA)
 #   - Workload Identity GSAs for in-cluster controllers: Crossplane, External Secrets
 #   - No public edge: every UI (Argo CD, Headlamp, Polaris) is reached with kubectl port-forward
@@ -19,7 +21,7 @@
 # Usage:
 #   PROJECT_ID=dev1-486920 ./gke-deploy.sh
 #
-# Overridable env vars: REGION, ZONE, CLUSTER, VPC, SUBNET, ROUTER, NAT, MACHINE_TYPE,
+# Overridable env vars: REGION, ZONE, CLUSTER, VPC, SUBNET, ROUTER, NAT, AR_REPO, MACHINE_TYPE,
 #                       MIN_NODES, MAX_NODES, NODE_DISK_SIZE_GB
 set -euo pipefail
 trap 'echo "ERROR: failed at line $LINENO (exit $?)" >&2' ERR
@@ -35,6 +37,7 @@ VPC="${VPC:-dev-vpc}"
 SUBNET="${SUBNET:-dev-subnet}"
 ROUTER="${ROUTER:-dev-router}"
 NAT="${NAT:-dev-nat}"
+AR_REPO="${AR_REPO:-operator-lab}"       # Docker repository in $REGION for first-party images
 MACHINE_TYPE="${MACHINE_TYPE:-e2-standard-2}"
 MIN_NODES="${MIN_NODES:-3}"
 MAX_NODES="${MAX_NODES:-5}"
@@ -96,6 +99,8 @@ if [[ "$IAM_CHECK" == "1" ]]; then
     compute.firewalls.create
     container.clusters.create
     container.clusters.getCredentials
+    artifactregistry.repositories.create
+    artifactregistry.repositories.setIamPolicy
     iam.serviceAccounts.create
     iam.serviceAccounts.setIamPolicy
   )
@@ -141,7 +146,8 @@ gcloud services enable \
   compute.googleapis.com \
   secretmanager.googleapis.com \
   iam.googleapis.com \
-  iamcredentials.googleapis.com
+  iamcredentials.googleapis.com \
+  artifactregistry.googleapis.com
 
 # ---- 1. Service accounts ----------------------------------------------------
 ensure_sa() { # ensure_sa <id> <display name>
@@ -164,11 +170,28 @@ ensure_sa "$ESO_SA"           "External Secrets Operator (Secret Manager reader)
 
 log "Granting project roles"
 # Node SA: logging/monitoring/metadata only (the predefined role GKE recommends for custom node
-# SAs). Every image is public, so no registry access is needed.
+# SAs). Registry access is granted on the first-party repository only (section 1b), never
+# project-wide.
 project_role "$NODE_SA" roles/container.defaultNodeServiceAccount
 # Crossplane: no roles yet - it manages no GCP resources. Grant the narrowest role per resource
 # type here when a managed resource is added (e.g. a GCS bucket for an operator experiment).
 # ESO gets secretAccessor per secret (gke-secrets-seed.sh), not project-wide.
+
+# ---- 1b. Artifact Registry for first-party images ----------------------------
+log "Creating Artifact Registry repository: $AR_REPO ($REGION)"
+if exists artifacts repositories describe "$AR_REPO" --location="$REGION"; then
+  skip
+else
+  gcloud artifacts repositories create "$AR_REPO" \
+    --repository-format=docker \
+    --location="$REGION" \
+    --description="First-party images for the operator lab"
+fi
+# Repository-scoped, so nodes can pull this repository's images and nothing else in the project.
+gcloud artifacts repositories add-iam-policy-binding "$AR_REPO" --location="$REGION" \
+  --member="serviceAccount:$(sa_email "$NODE_SA")" --role=roles/artifactregistry.reader \
+  --quiet >/dev/null
+echo "    $NODE_SA -> roles/artifactregistry.reader on $AR_REPO"
 
 # ---- 2. Dedicated VPC + subnet --------------------------------------------
 log "Creating VPC: $VPC"
@@ -237,6 +260,7 @@ else
     --service-account="$(sa_email "$NODE_SA")" \
     --workload-pool="${PROJECT_ID}.svc.id.goog" \
     --enable-dataplane-v2 \
+    --gateway-api=disabled \
     --no-enable-managed-prometheus \
     --enable-shielded-nodes \
     --shielded-secure-boot \

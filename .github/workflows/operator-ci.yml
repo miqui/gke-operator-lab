@@ -1,0 +1,57 @@
+name: Operator CI
+
+# Build and test the OpenAPI route operator (src/openapi-route-operator): formatting, vet,
+# generated code and CRDs in sync with the Go types, unit + envtest tests, and an image build.
+# Needs no cloud credentials; the live GKE acceptance suite (make test-e2e) is opt-in and local.
+on:
+  pull_request:
+    paths:
+      - "src/openapi-route-operator/**"
+      - ".github/workflows/operator-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/openapi-route-operator/**"
+      - ".github/workflows/operator-ci.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: src/openapi-route-operator
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: src/openapi-route-operator/go.mod
+          cache-dependency-path: src/openapi-route-operator/go.sum
+
+      # Regenerate CRDs, RBAC and DeepCopy code and gofmt everything; any resulting diff means a
+      # change was committed without running `make manifests generate fmt`.
+      - name: Generated code and formatting are up to date
+        run: |
+          set -euo pipefail
+          make manifests generate fmt
+          git diff --exit-code -- . || {
+            echo "::error::Run 'make manifests generate fmt' in src/openapi-route-operator and commit the result"
+            exit 1
+          }
+
+      - name: Vet
+        run: make vet
+
+      # Unit tests plus envtest (a real kube-apiserver and etcd, binaries pinned by the Makefile).
+      - name: Test
+        run: make test
+
+      - name: Build image
+        run: make docker-build IMG=openapi-route-operator:ci

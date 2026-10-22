@@ -1,0 +1,215 @@
+openapi: 3.2.0
+info:
+  title: Flights
+  version: 1.0.0
+  summary: Scheduled flight instances.
+  description: |
+    A Flight is one scheduled flight instance on one date, identified by a service-assigned UUID.
+    A flight number (e.g. AC102) repeats across dates and is not an identity.
+
+    This document is the routing source for the OpenAPI route operator: each operation becomes a
+    Gateway route match. Backend Services are bound by the OpenAPIRoute resource, not here.
+servers:
+  - url: http://flights.example.test
+    description: Lab Gateway hostname (informational; the OpenAPIRoute declares the real binding)
+
+tags:
+  - name: flights
+    description: Flight instances and their status
+
+paths:
+  /flights:
+    get:
+      operationId: listFlights
+      tags: [flights]
+      summary: List flight instances
+      parameters:
+        - name: origin
+          in: query
+          description: Filter by origin airport.
+          schema: { $ref: '#/components/schemas/AirportCode' }
+        - name: destination
+          in: query
+          description: Filter by destination airport.
+          schema: { $ref: '#/components/schemas/AirportCode' }
+        - name: date
+          in: query
+          description: Filter by scheduled departure date (airport-local).
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Matching flights.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Flight' }
+    post:
+      operationId: createFlight
+      tags: [flights]
+      summary: Create a flight instance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateFlight' }
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Flight' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /flights/{flightId}:
+    parameters:
+      - $ref: '#/components/parameters/FlightId'
+    get:
+      operationId: getFlight
+      tags: [flights]
+      summary: Get a flight instance
+      responses:
+        '200':
+          description: The flight.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Flight' }
+              examples:
+                scheduled: { $ref: '#/components/examples/ScheduledFlight' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      operationId: updateFlight
+      tags: [flights]
+      summary: Update a flight's status or estimated times
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema: { $ref: '#/components/schemas/UpdateFlight' }
+      responses:
+        '200':
+          description: The updated flight.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Flight' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /flights/{flightId}/status:
+    parameters:
+      - $ref: '#/components/parameters/FlightId'
+    get:
+      operationId: getFlightStatus
+      tags: [flights]
+      summary: Get a flight's current status
+      responses:
+        '200':
+          description: Status and estimated times.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FlightStatus' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+components:
+  parameters:
+    FlightId:
+      name: flightId
+      in: path
+      required: true
+      description: Flight instance identifier.
+      schema: { type: string, format: uuid }
+
+  schemas:
+    AirportCode:
+      description: Three-letter uppercase IATA airport code.
+      type: string
+      pattern: '^[A-Z]{3}$'
+      examples: [YYZ]
+
+    FlightNumber:
+      description: Airline designator plus number; repeats across dates.
+      type: string
+      pattern: '^[A-Z0-9]{2}[0-9]{1,4}[A-Z]?$'
+      examples: [AC102]
+
+    Status:
+      type: string
+      enum: [scheduled, boarding, departed, arrived, cancelled, diverted]
+
+    Flight:
+      type: object
+      required: [id, flightNumber, origin, destination, scheduledDeparture, scheduledArrival, status]
+      properties:
+        id: { type: string, format: uuid, readOnly: true }
+        flightNumber: { $ref: '#/components/schemas/FlightNumber' }
+        origin: { $ref: '#/components/schemas/AirportCode' }
+        destination: { $ref: '#/components/schemas/AirportCode' }
+        scheduledDeparture: { type: string, format: date-time }
+        scheduledArrival: { type: string, format: date-time }
+        estimatedDeparture: { type: string, format: date-time }
+        estimatedArrival: { type: string, format: date-time }
+        status: { $ref: '#/components/schemas/Status' }
+
+    CreateFlight:
+      description: A new flight instance. The service assigns id; estimates come later via update.
+      type: object
+      additionalProperties: false
+      required: [flightNumber, origin, destination, scheduledDeparture, scheduledArrival]
+      properties:
+        flightNumber: { $ref: '#/components/schemas/FlightNumber' }
+        origin: { $ref: '#/components/schemas/AirportCode' }
+        destination: { $ref: '#/components/schemas/AirportCode' }
+        scheduledDeparture: { type: string, format: date-time }
+        scheduledArrival: { type: string, format: date-time }
+        status: { $ref: '#/components/schemas/Status' }
+
+    UpdateFlight:
+      description: Partial update; at least one field is required.
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        status: { $ref: '#/components/schemas/Status' }
+        estimatedDeparture: { type: string, format: date-time }
+        estimatedArrival: { type: string, format: date-time }
+
+    FlightStatus:
+      type: object
+      required: [id, status]
+      properties:
+        id: { type: string, format: uuid }
+        status: { $ref: '#/components/schemas/Status' }
+        estimatedDeparture: { type: string, format: date-time }
+        estimatedArrival: { type: string, format: date-time }
+
+    Problem:
+      type: object
+      required: [title, status]
+      properties:
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+
+  responses:
+    BadRequest:
+      description: The request was malformed.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: No flight with that id.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+
+  examples:
+    ScheduledFlight:
+      summary: Toronto to Vancouver, on time
+      dataValue:
+        id: 123e4567-e89b-12d3-a456-426614174000
+        flightNumber: AC102
+        origin: YYZ
+        destination: YVR
+        scheduledDeparture: '2026-11-03T08:00:00-05:00'
+        scheduledArrival: '2026-11-03T10:25:00-08:00'
+        status: scheduled

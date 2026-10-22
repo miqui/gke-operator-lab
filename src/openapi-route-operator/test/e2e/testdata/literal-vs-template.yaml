@@ -1,0 +1,15 @@
+# A literal path beside a template at the same position: /flights/search must reach its own
+# binding, every other single segment the template's. Bind searchFlights to flight-command.
+openapi: 3.2.0
+info: { title: Flights search, version: '1' }
+paths:
+  /flights/search:
+    get:
+      operationId: searchFlights
+      responses: { '200': { description: Matching flights. } }
+  /flights/{flightId}:
+    parameters:
+      - { name: flightId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getFlight
+      responses: { '200': { description: The flight. } }

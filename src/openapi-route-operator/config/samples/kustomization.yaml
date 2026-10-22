@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- routing_v1alpha1_openapiroute.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples

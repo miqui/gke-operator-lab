@@ -37,3 +37,10 @@ https://charts.external-secrets.io, `crossplane-stable` https://charts.crossplan
 
 Bumping Argo CD's own chart: change `targetRevision` in `k8s/argocd/apps/argocd.yaml` **and**
 `ARGOCD_CHART_VERSION` in `gke-bootstrap.sh`, so fresh clusters start on the same version.
+
+## Envoy Gateway (operator exercise)
+
+Not an Argo CD Application: Envoy Gateway v1.9.2 for the OpenAPI route operator is installed from
+this branch by `k8s/envoy-gateway/install.sh` (controller as Helm release `eg` in
+`envoy-gateway-system`; CRDs server-side applied, not a release). Versions, the CRD ownership
+rules, and why the CRDs cannot be a Helm release: [ENVOY.md](ENVOY.md).

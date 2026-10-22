@@ -1,0 +1,65 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: manager-role
+  namespace: flights-lab
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - services
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - events.k8s.io
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - gateway.networking.k8s.io
+  resources:
+  - gateways
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - gateway.networking.k8s.io
+  resources:
+  - httproutes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - routing.lab.dev
+  resources:
+  - openapiroutes
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - routing.lab.dev
+  resources:
+  - openapiroutes/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - routing.lab.dev
+  resources:
+  - openapiroutes/status
+  verbs:
+  - get
+  - patch
+  - update

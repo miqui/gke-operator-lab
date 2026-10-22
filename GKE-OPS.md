@@ -3,6 +3,29 @@
 Short explanations of cluster events that look alarming but aren't. The cluster is zonal,
 `e2-standard-2` workers, node autoscaling 3..5 (`gke-deploy.sh`).
 
+## Cluster facts
+
+Created 2026-10-22 with `PROJECT_ID=dev1-486920 ./gke-deploy.sh`:
+
+| | |
+| --- | --- |
+| Cluster | `dev-cluster`, zonal `us-central1-a`, project `dev1-486920` |
+| Kubernetes | `v1.35.6-gke.1250001`, release channel `STABLE` (auto-upgrades within the channel) |
+| GKE Gateway API | `CHANNEL_DISABLED`: GKE installs no Gateway API CRDs; the Envoy runtime owns them |
+| Image registry | Artifact Registry `us-central1-docker.pkg.dev/dev1-486920/operator-lab`; `gke-dev-nodes` has `roles/artifactregistry.reader` on that repository only |
+| Control plane access | Authorized network is the operator's public IP at creation time |
+
+Check them with the "Foundation checks" in [KUBECTL.md](KUBECTL.md). Pins that depend on the
+Kubernetes version (Envoy Gateway, Gateway API, envtest) are recorded in [ENVOY.md](ENVOY.md).
+
+If `kubectl` times out after your public IP changes, re-authorize the new one (this is the
+command `gke-deploy.sh` prints):
+
+```bash
+gcloud container clusters update dev-cluster --project=dev1-486920 --zone=us-central1-a \
+  --enable-master-authorized-networks --master-authorized-networks="$(curl -4 -s ifconfig.me)/32"
+```
+
 ## "Cluster Autoscaler skipped scaling up default-pool" for `node-collector-*`
 
 Seen as a `NotTriggerScaleUp` note, e.g.:
