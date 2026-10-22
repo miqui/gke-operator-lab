@@ -8,8 +8,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ../../src/openapi-route-operator/config/default
+- ../../src/openapi-route-operator/config/default
 images:
-  - name: controller
-    newName: us-central1-docker.pkg.dev/dev1-486920/operator-lab/openapi-route-operator
-    digest: sha256:451be2c0abb2f982d9803978c597eab3077a8b349313b8733a4dab9f8fe2c02b
+- digest: sha256:e3ed1da8e806046a83b7731c1fed4db263bb4be85f26eb804d5a5f61558d22d3
+  name: controller
+  newName: us-central1-docker.pkg.dev/dev1-486920/operator-lab/openapi-route-operator
