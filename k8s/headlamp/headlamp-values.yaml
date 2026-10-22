@@ -1,0 +1,35 @@
+# Values for the `headlamp/headlamp` chart 0.45.0 (https://headlamp.dev/ - general-purpose
+# Kubernetes web UI), rendered by
+# k8s/argocd/apps/headlamp.yaml.
+#
+# Highest-risk tool in the cluster (it can browse everything, and with enough RBAC exec into pods
+# and edit anything), so:
+#   - no Ingress/LoadBalancer: reach it with gke-port-forward.sh (http://localhost:4466), which
+#     rides on `kubectl port-forward` - i.e. the GKE API server, locked to the operator's IP and
+#     Google IAM;
+#   - its ServiceAccount is bound to the built-in read-only `view` ClusterRole (no Secrets, no
+#     exec, no writes), not the chart's default cluster-admin. Log in with:
+#       kubectl create token headlamp -n headlamp --duration=1h
+#     For an admin session, mint a short-lived token for an identity that has it on demand
+#     rather than giving Headlamp standing admin rights - see README "Headlamp".
+
+clusterRoleBinding:
+  create: true
+  clusterRoleName: view
+
+config:
+  # The chart's bundled plugins (chart default, spelled out here for visibility). Its Prometheus
+  # plugin finds nothing to show: this cluster runs no Prometheus.
+  staticPlugins:
+    enabled: true
+
+resources:
+  requests:
+    cpu: "50m"
+    memory: "128Mi"
+  limits:
+    cpu: "250m"
+    memory: "256Mi"
+
+ingress:
+  enabled: false

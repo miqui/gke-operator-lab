@@ -1,0 +1,30 @@
+# The one Application gke-bootstrap.sh applies by hand ("app of apps"): it syncs k8s/argocd/apps/,
+# where every other Application lives - including Argo CD itself. After bootstrap, the whole
+# platform is defined by this repo's main branch.
+#
+# Install order comes from sync waves on the child Applications, and a wave only starts once the
+# previous one is Healthy (that needs the Application health check in argocd-values.yaml):
+#
+#   -4  argocd (self-managed), external-secrets, crossplane      controllers + CRDs
+#   -3  kyverno, platform                                         policy engine; secret store,
+#                                                                 Crossplane GCP provider family
+#   -2  kyverno-policies                                          enforce rules in place before workloads
+#   -1  headlamp, polaris, trivy-operator                         tools
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/miqui/gke-ai-observer.git
+    targetRevision: main
+    path: k8s/argocd/apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

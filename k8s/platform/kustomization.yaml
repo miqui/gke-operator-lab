@@ -1,0 +1,19 @@
+# Platform layer, synced by k8s/argocd/apps/platform.yaml once the External Secrets and
+# Crossplane controllers (and their CRDs) exist:
+#
+#   - Crossplane's GCP provider family, the functions Compositions run, and the providers'
+#     credentials config (Workload Identity - no key file)
+#
+# No GCP managed resources yet: add a sub-provider (e.g. provider-gcp-storage) to
+# crossplane-packages.yaml, an XRD + Composition here, and the matching role for the
+# crossplane-gcp GSA in gke-deploy.sh.
+#
+# Argo CD sync waves inside this Application: packages first (0), then the objects whose CRDs
+# those packages install (1).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - crossplane-runtime-config.yaml
+  - crossplane-packages.yaml
+  - crossplane-provider-config.yaml
