@@ -42,9 +42,8 @@ The review covered the project files across all root scripts and documentation, 
 | `gke-deploy.sh:31-33` | Defaults to dev-cluster in us-central1-a | Create the cluster with these repository defaults; region us-central1 does not mean a regional cluster |
 | `gke-deploy.sh:216-240` | Cluster create passes no `--gateway-api` flag | Add `--gateway-api=disabled` explicitly so GKE never installs or reverts its own Gateway API CRDs |
 | `gke-deploy.sh:154-157` | Node SA has only `roles/container.defaultNodeServiceAccount`; comment assumes every image is public | Add `artifactregistry.googleapis.com` and a repository-scoped `roles/artifactregistry.reader` grant for the operator image |
-| `gke-deploy.sh:20,29` | Usage examples still show `PROJECT_ID=dev-ai-1` | Update with the other project-bound references |
 | `gke-bootstrap.sh:23-58` | Selects the expected context and rejects manifests for another project | Retarget project-bound manifests before platform bootstrap |
-| `k8s/platform/crossplane-provider-config.yaml:15`, `crossplane-runtime-config.yaml:18`, `k8s/external-secrets/values.yaml:14` | Still reference dev-ai-1 | These are concrete project-configuration gaps, not information to ask the user to repeat |
+| Scripts, docs, `k8s/platform/crossplane-*.yaml`, `k8s/external-secrets/values.yaml` | Retargeted from dev-ai-1 to dev1-486920 on `main` (441ff5d) | Done; `gke-bootstrap.sh`'s project check passes for dev1-486920 |
 | `k8s/argocd/root-application.yaml:21-22` and all child Applications | Read miqui/gke-ai-observer on main | Local feature-branch files are not automatically deployed; verify source ownership before touching GitOps |
 | `gke-secrets-seed.sh:22`, `gke-bootstrap.sh:33`, `.env.example` | No secrets are configured | Flight stubs and the operator do not need a new secret store or 1Password dependency |
 | `check-policies.sh:27`, `polaris-audit.sh:21` | Workload inventories are empty | Add actual first-party operator and flight manifests to both inventories |
@@ -236,9 +235,9 @@ Preserving existing routes on invalid input is not a promise to reconstruct a hi
    - artifactregistry.googleapis.com for the operator image (new).
 3. Add `--gateway-api=disabled` to the cluster create command so GKE never manages Gateway API CRDs on this cluster (confirm the flag against the installed gcloud; it is creation-relevant, not a later toggle to rely on).
 4. Add an idempotent Artifact Registry Docker repository (proposed `operator-lab` in `us-central1`) and grant `gke-dev-nodes` `roles/artifactregistry.reader` on that repository only, not project-wide. Update the node-SA comment that says every image is public.
-5. Make existence probes distinguish genuine NotFound from permission and connectivity failures before entering create paths; today `describe ... &>/dev/null` treats any failure as absent. API enablement already precedes the probes.
-6. Update the `dev-ai-1` usage examples in gke-deploy.sh, then create the cluster with `PROJECT_ID=dev1-486920 ./gke-deploy.sh`. Treat private-control-plane authorized-IP failures using the documented GKE access procedure (the script prints the re-authorize command).
-7. If full platform bootstrap is required, first retarget the three project-bound manifests identified above and reconcile the repository URL/revision consistently. Merely setting GITHUB_REPO does not rewrite child Application URLs.
+5. Done on `main` (441ff5d): existence probes go through an `exists` helper that returns absent only on NotFound and aborts on permission, disabled-API, or network errors.
+6. Create the cluster with `PROJECT_ID=dev1-486920 ./gke-deploy.sh`. Treat private-control-plane authorized-IP failures using the documented GKE access procedure (the script prints the re-authorize command).
+7. If full platform bootstrap is required, reconcile the repository URL/revision consistently (the project-bound manifests are already retargeted). Merely setting GITHUB_REPO does not rewrite child Application URLs.
 8. Full Argo CD/Crossplane bootstrap is not a prerequisite for the operator: phase 1 needs only the cluster, Envoy Gateway, the fixtures, and the operator. Do not run gke-teardown.sh during exercise setup or cleanup.
 
 No broad IAM grant is implicit; the only new grant is the repository-scoped reader above.
@@ -335,7 +334,7 @@ All traffic checks go through the port-forward with `Host: flights.example.test`
 Phase 1 (operator end to end):
 
 1. Commit the current baseline on `feat/envoy-flights-gateway`.
-2. Apply the §7A gke-deploy.sh changes (Artifact Registry API, repository and reader grant, `--gateway-api=disabled`, NotFound-safe probes, project examples) and create the cluster. Local work below does not wait on it.
+2. Apply the §7A gke-deploy.sh changes (Artifact Registry API, repository and reader grant, `--gateway-api=disabled`; probes and project targeting are already on `main`) and create the cluster. Local work below does not wait on it.
 3. Scaffold the Kubebuilder module; implement the input contract and pure compiler with rejection/precedence/limit tests.
 4. Implement reconciliation, ownership, status, leader election, and envtest cases.
 5. Install the pinned Envoy Gateway with lab-owned Gateway API CRDs, the ClusterIP EnvoyProxy, and the flights fixtures.
