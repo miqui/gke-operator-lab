@@ -99,6 +99,9 @@ Ready is about configuration, not reachability: only real HTTP requests prove a 
 
 ## Development
 
+Architecture diagrams, test layers, how to make common changes, releasing, debugging, and
+invariants: [DEVELOPING.md](DEVELOPING.md).
+
 Requires Go (see `go.mod`), Docker, and access to the cluster for `make run`.
 
 ```sh

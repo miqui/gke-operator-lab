@@ -196,6 +196,7 @@ An operator that keeps Envoy Gateway's routes in line with an OpenAPI 3.2 docume
 `examples/flights/openapi.yaml`, run `./flights-publish.sh`, and the generated HTTPRoute changes.
 Design and scope: [PLAN.md](PLAN.md) and `openspec/changes/add-openapi-route-operator/`. The API,
 status conditions, and safe-change rules: [the operator's README](src/openapi-route-operator/README.md).
+Working on the operator (architecture diagrams, tests, releasing): [DEVELOPING.md](src/openapi-route-operator/DEVELOPING.md).
 
 | Piece | Where |
 | --- | --- |
@@ -268,3 +269,17 @@ operator and Envoy Gateway logs. Start with `openapiroute.yaml`: `SourceValid` s
 document compiled, `RouteApplied` whether the route was written, and `Ready` whether Envoy
 accepted it. A missing `KUBE_CONTEXT` fails the run; it never counts as a pass.
 `E2E_SELFTEST_FAIL=1` adds one deliberately failing spec to check the diagnostics path.
+
+### Verified deployment (2026-10-22)
+
+The full sequence under "Deploying the exercise" was run on the dev cluster, followed by two
+consecutive `make test-e2e` runs: 24/24 specs passed each time (~50 s).
+
+| Component | Version |
+| --- | --- |
+| GKE | `dev-cluster`, v1.35.6-gke.1250001 (stable channel), GKE Gateway API disabled |
+| Envoy Gateway | v1.9.2 (Envoy distroless-v1.39.x) |
+| Gateway API CRDs | v1.6.1, standard channel |
+| Operator image | `us-central1-docker.pkg.dev/dev1-486920/operator-lab/openapi-route-operator@sha256:e3ed1da8e806046a83b7731c1fed4db263bb4be85f26eb804d5a5f61558d22d3` (built from `e89752135ff2`) |
+| Operator dependencies | controller-runtime v0.25.0, Gateway API Go module v1.6.1, libopenapi v0.41.6 |
+| Fixtures | `nginx:1.31.6-alpine` |
