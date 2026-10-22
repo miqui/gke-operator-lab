@@ -17,7 +17,7 @@
 # touches another project and never changes your gcloud configuration's default project.
 #
 # Usage:
-#   PROJECT_ID=dev-ai-1 ./gke-deploy.sh
+#   PROJECT_ID=dev1-486920 ./gke-deploy.sh
 #
 # Overridable env vars: REGION, ZONE, CLUSTER, VPC, SUBNET, ROUTER, NAT, MACHINE_TYPE,
 #                       MIN_NODES, MAX_NODES, NODE_DISK_SIZE_GB
@@ -26,7 +26,7 @@ trap 'echo "ERROR: failed at line $LINENO (exit $?)" >&2' ERR
 cd "$(dirname "$0")"
 
 # ---- Config ---------------------------------------------------------------
-PROJECT_ID="${PROJECT_ID:?PROJECT_ID is required, e.g. PROJECT_ID=dev-ai-1 ./gke-deploy.sh}"
+PROJECT_ID="${PROJECT_ID:?PROJECT_ID is required, e.g. PROJECT_ID=dev1-486920 ./gke-deploy.sh}"
 export CLOUDSDK_CORE_PROJECT="$PROJECT_ID"
 REGION="${REGION:-us-central1}"
 ZONE="${ZONE:-us-central1-a}"
@@ -55,6 +55,17 @@ ESO_SA="external-secrets"               # KSA external-secrets/external-secrets
 log() { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
 skip() { echo "    already exists, skipping"; }
 sa_email() { echo "$1@${PROJECT_ID}.iam.gserviceaccount.com"; }
+# exists <gcloud describe args...>: 0 if the resource exists, 1 if gcloud says it's not found.
+# Any other failure (permission denied, disabled API, network) aborts rather than being mistaken
+# for "absent" and sending the script down a create path.
+exists() {
+  local err
+  err=$(gcloud "$@" 2>&1 >/dev/null) && return 0
+  grep -qiE 'not.?found|404' <<<"$err" && return 1
+  echo "ERROR: gcloud $* failed:" >&2
+  echo "$err" >&2
+  exit 1
+}
 
 command -v gcloud >/dev/null 2>&1 || { echo "gcloud CLI not found" >&2; exit 1; }
 command -v kubectl >/dev/null 2>&1 || { echo "kubectl not found" >&2; exit 1; }
@@ -134,7 +145,7 @@ gcloud services enable \
 
 # ---- 1. Service accounts ----------------------------------------------------
 ensure_sa() { # ensure_sa <id> <display name>
-  if gcloud iam service-accounts describe "$(sa_email "$1")" &>/dev/null; then
+  if exists iam service-accounts describe "$(sa_email "$1")"; then
     echo "    $1: exists"
   else
     gcloud iam service-accounts create "$1" --display-name="$2"
@@ -161,14 +172,14 @@ project_role "$NODE_SA" roles/container.defaultNodeServiceAccount
 
 # ---- 2. Dedicated VPC + subnet --------------------------------------------
 log "Creating VPC: $VPC"
-if gcloud compute networks describe "$VPC" &>/dev/null; then
+if exists compute networks describe "$VPC"; then
   skip
 else
   gcloud compute networks create "$VPC" --subnet-mode=custom
 fi
 
 log "Creating subnet: $SUBNET ($SUBNET_RANGE, pods=$PODS_RANGE, services=$SERVICES_RANGE)"
-if gcloud compute networks subnets describe "$SUBNET" --region="$REGION" &>/dev/null; then
+if exists compute networks subnets describe "$SUBNET" --region="$REGION"; then
   skip
 else
   gcloud compute networks subnets create "$SUBNET" \
@@ -181,14 +192,14 @@ fi
 
 # ---- 3. Cloud Router + NAT (egress for private nodes) ----------------------
 log "Creating Cloud Router: $ROUTER"
-if gcloud compute routers describe "$ROUTER" --region="$REGION" &>/dev/null; then
+if exists compute routers describe "$ROUTER" --region="$REGION"; then
   skip
 else
   gcloud compute routers create "$ROUTER" --network="$VPC" --region="$REGION"
 fi
 
 log "Creating Cloud NAT: $NAT"
-if gcloud compute routers nats describe "$NAT" --router="$ROUTER" --region="$REGION" &>/dev/null; then
+if exists compute routers nats describe "$NAT" --router="$ROUTER" --region="$REGION"; then
   skip
 else
   gcloud compute routers nats create "$NAT" \
@@ -210,7 +221,7 @@ echo "    operator IP: $MY_IP"
 # These flags can only be set at creation time (dataplane v2) or are awkward to change later, so
 # an existing cluster created by an older version of this script must be recreated to pick them up.
 log "Creating cluster: $CLUSTER (zonal $ZONE, $MACHINE_TYPE, ${NODE_DISK_SIZE_GB}GB pd-balanced, autoscaling $MIN_NODES..$MAX_NODES, private nodes)"
-if gcloud container clusters describe "$CLUSTER" --zone="$ZONE" &>/dev/null; then
+if exists container clusters describe "$CLUSTER" --zone="$ZONE"; then
   skip
 else
   gcloud container clusters create "$CLUSTER" \
@@ -253,7 +264,7 @@ MASTER_RANGES=$(gcloud compute firewall-rules list \
   --format='value(sourceRanges.list())' | head -1)
 if [[ -z "$MASTER_RANGES" ]]; then
   echo "    PSC-based cluster (webhooks reached via konnectivity) - no extra rule needed"
-elif gcloud compute firewall-rules describe "$WEBHOOK_FW" &>/dev/null; then
+elif exists compute firewall-rules describe "$WEBHOOK_FW"; then
   skip
 else
   NODE_TAG=$(gcloud compute firewall-rules list \

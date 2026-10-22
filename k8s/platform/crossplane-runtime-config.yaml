@@ -15,7 +15,7 @@ spec:
     metadata:
       name: provider-gcp
       annotations:
-        iam.gke.io/gcp-service-account: crossplane-gcp@dev-ai-1.iam.gserviceaccount.com
+        iam.gke.io/gcp-service-account: crossplane-gcp@dev1-486920.iam.gserviceaccount.com
   deploymentTemplate:
     spec:
       selector: {}

@@ -6,8 +6,8 @@ Kyverno in [KYVERNO.md](KYVERNO.md), Trivy in [TRIVY.md](TRIVY.md).
 ## Cluster access and platform status (GKE)
 
 ```bash
-gcloud container clusters get-credentials dev-cluster --zone=us-central1-a --project=dev-ai-1
-kubectl config current-context          # gke_dev-ai-1_us-central1-a_dev-cluster
+gcloud container clusters get-credentials dev-cluster --zone=us-central1-a --project=dev1-486920
+kubectl config current-context          # gke_dev1-486920_us-central1-a_dev-cluster
 kubectl get nodes -o wide
 
 # Everything is an Argo CD Application (see ARGOCD.md)

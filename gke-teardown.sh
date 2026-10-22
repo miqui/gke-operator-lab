@@ -14,9 +14,9 @@
 # project is touched and your gcloud configuration's default project is left alone.
 #
 # Usage:
-#   PROJECT_ID=dev-ai-1 ./gke-teardown.sh
-#   PROJECT_ID=dev-ai-1 ./gke-teardown.sh --yes            # skip confirmation
-#   PROJECT_ID=dev-ai-1 ./gke-teardown.sh --purge          # also the persistent resources
+#   PROJECT_ID=dev1-486920 ./gke-teardown.sh
+#   PROJECT_ID=dev1-486920 ./gke-teardown.sh --yes            # skip confirmation
+#   PROJECT_ID=dev1-486920 ./gke-teardown.sh --purge          # also the persistent resources
 #
 # Overridable env vars match gke-deploy.sh.
 set -euo pipefail
@@ -24,7 +24,7 @@ trap 'echo "ERROR: failed at line $LINENO (exit $?)" >&2' ERR
 cd "$(dirname "$0")"
 
 # ---- Config ---------------------------------------------------------------
-PROJECT_ID="${PROJECT_ID:?PROJECT_ID is required, e.g. PROJECT_ID=dev-ai-1 ./gke-teardown.sh}"
+PROJECT_ID="${PROJECT_ID:?PROJECT_ID is required, e.g. PROJECT_ID=dev1-486920 ./gke-teardown.sh}"
 export CLOUDSDK_CORE_PROJECT="$PROJECT_ID"
 REGION="${REGION:-us-central1}"
 ZONE="${ZONE:-us-central1-a}"

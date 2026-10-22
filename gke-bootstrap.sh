@@ -12,7 +12,7 @@
 # External Secrets (seeded by gke-secrets-seed.sh).
 #
 # Usage:
-#   PROJECT_ID=dev-ai-1 ./gke-bootstrap.sh
+#   PROJECT_ID=dev1-486920 ./gke-bootstrap.sh
 #
 # Prerequisites: gke-deploy.sh has run; gke-secrets-seed.sh has run at least once; this repo is
 # pushed to GITHUB_REPO's main branch and is public (Argo CD reads it anonymously).
@@ -20,7 +20,7 @@ set -euo pipefail
 trap 'echo "ERROR: failed at line $LINENO (exit $?)" >&2' ERR
 cd "$(dirname "$0")"
 
-PROJECT_ID="${PROJECT_ID:?PROJECT_ID is required, e.g. PROJECT_ID=dev-ai-1 ./gke-bootstrap.sh}"
+PROJECT_ID="${PROJECT_ID:?PROJECT_ID is required, e.g. PROJECT_ID=dev1-486920 ./gke-bootstrap.sh}"
 export CLOUDSDK_CORE_PROJECT="$PROJECT_ID"
 ZONE="${ZONE:-us-central1-a}"
 CLUSTER="${CLUSTER:-dev-cluster}"
@@ -54,7 +54,7 @@ echo "    cluster: $EXPECTED_CONTEXT"
 # The manifests in k8s/ hard-code the project (Workload Identity annotations, Crossplane and
 # Secret Manager config); refuse to bootstrap a cluster in a different one.
 if ! grep -q "$PROJECT_ID" k8s/platform/crossplane-provider-config.yaml; then
-  echo "ERROR: k8s/ manifests are not for project $PROJECT_ID (grep for dev-ai-1 to retarget)" >&2
+  echo "ERROR: k8s/ manifests are not for project $PROJECT_ID (grep for dev1-486920 to retarget)" >&2
   exit 1
 fi
 

@@ -1,7 +1,7 @@
 # gke-operator-lab
 
 An environment for developing custom Kubernetes operators and testing third-party operators on
-a dev [GKE](https://cloud.google.com/kubernetes-engine) cluster in GCP project **`dev-ai-1`**.
+a dev [GKE](https://cloud.google.com/kubernetes-engine) cluster in GCP project **`dev1-486920`**.
 Argo CD deploys the platform, and Crossplane can provision GCP resources needed by experiments.
 
 > **Status:** the platform layer is in place. Operator development tooling and repeatable test
@@ -120,7 +120,7 @@ Requirements:
 - the [1Password CLI](https://developer.1password.com/docs/cli/) (`op`), once secrets exist
 
 ```bash
-export PROJECT_ID=dev-ai-1
+export PROJECT_ID=dev1-486920
 
 # 1. GCP foundation + cluster (~10 min)
 ./gke-deploy.sh

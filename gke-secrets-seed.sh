@@ -8,7 +8,7 @@
 # Secrets live outside the cluster, so they survive gke-teardown.sh / gke-deploy.sh cycles.
 #
 # Usage:
-#   op run --env-file=.env -- env PROJECT_ID=dev-ai-1 ./gke-secrets-seed.sh
+#   op run --env-file=.env -- env PROJECT_ID=dev1-486920 ./gke-secrets-seed.sh
 #
 # Idempotent: a new secret version is only added when the value actually changed.
 set -euo pipefail

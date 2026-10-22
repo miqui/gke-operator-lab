@@ -11,7 +11,7 @@ serviceAccount:
   # without providing credentials of their own.
   name: external-secrets
   annotations:
-    iam.gke.io/gcp-service-account: external-secrets@dev-ai-1.iam.gserviceaccount.com
+    iam.gke.io/gcp-service-account: external-secrets@dev1-486920.iam.gserviceaccount.com
 
 resources:
   requests:

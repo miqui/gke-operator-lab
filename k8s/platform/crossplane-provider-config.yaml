@@ -12,6 +12,6 @@ metadata:
     argocd.argoproj.io/sync-wave: "1"
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
-  projectID: dev-ai-1
+  projectID: dev1-486920
   credentials:
     source: InjectedIdentity
