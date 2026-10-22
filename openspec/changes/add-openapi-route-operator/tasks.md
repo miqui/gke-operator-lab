@@ -57,10 +57,10 @@
 
 ## 8. GKE acceptance suite
 
-- [ ] 8.1 Add `test/e2e` scaffolding: explicit `KUBE_CONTEXT`, its own loopback port-forward on a random port, the Host header, bounded `Eventually`, diagnostics capture to gitignored `test/e2e/artifacts/`, and `make test-e2e`. Verify that the suite fails rather than skips when the context is missing.
-- [ ] 8.2 Add the testdata spec variants (baseline, plus-delete, rebound, minus-operation, invalid, unsupported-query, description-only, literal-vs-template, empty) and the scenarios from the operator-delivery spec. Verify that all scenarios pass against the dev cluster.
-- [ ] 8.3 Add the negative-traffic, drift and restart, ownership (unrelated route untouched, name collision), readiness-failure (broken Service reference), and cleanup (OpenAPIRoute deletion garbage-collects the route) scenarios. Verify that all pass, and that a deliberately broken assertion produces diagnostics.
-- [ ] 8.4 Document the acceptance command, its prerequisites, and how to read failures in README.md. Verify that the command runs as documented from a fresh shell.
+- [x] 8.1 Add `test/e2e` scaffolding: explicit `KUBE_CONTEXT`, its own loopback port-forward on a random port, the Host header, bounded `Eventually`, diagnostics capture to gitignored `test/e2e/artifacts/`, and `make test-e2e`. Verify that the suite fails rather than skips when the context is missing.
+- [x] 8.2 Add the testdata spec variants (baseline, plus-delete, rebound, minus-operation, invalid, unsupported-query, description-only, literal-vs-template, empty) and the scenarios from the operator-delivery spec. Verify that all scenarios pass against the dev cluster.
+- [x] 8.3 Add the negative-traffic, drift and restart, ownership (unrelated route untouched, name collision), readiness-failure (broken Service reference), and cleanup (OpenAPIRoute deletion garbage-collects the route) scenarios. Verify that all pass, and that a deliberately broken assertion produces diagnostics.
+- [x] 8.4 Document the acceptance command, its prerequisites, and how to read failures in README.md. Verify that the command runs as documented from a fresh shell.
 
 ## 9. Integration and wrap-up
 

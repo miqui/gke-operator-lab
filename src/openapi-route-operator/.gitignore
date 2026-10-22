@@ -28,3 +28,6 @@ go.work
 
 # Kubeconfig might contain secrets
 *.kubeconfig
+
+# GKE acceptance suite diagnostics (make test-e2e)
+test/e2e/artifacts/

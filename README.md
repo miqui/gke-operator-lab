@@ -200,10 +200,10 @@ status conditions, and safe-change rules: [the operator's README](src/openapi-ro
 | Piece | Where |
 | --- | --- |
 | Operator (Go, Kubebuilder) | `src/openapi-route-operator/` |
-| Envoy Gateway runtime | `k8s/envoy-gateway/` ([HELM.md](HELM.md) "Envoy Gateway") |
+| Envoy Gateway runtime | `k8s/envoy-gateway/` ([ENVOY.md](ENVOY.md)) |
 | Gateway, path policy, fixtures | `k8s/flights/` |
 | Flights contract | `examples/flights/openapi.yaml` |
-| Access and removal | [KUBECTL.md](KUBECTL.md) "Flights gateway" |
+| Access, troubleshooting, removal | [ENVOY.md](ENVOY.md) |
 
 ### Flights fixtures
 
@@ -219,3 +219,52 @@ The Gateway does not validate parameter formats either. `/flights/{flightId}` is
 contract, but the route matches any single non-empty path segment, so `/flights/not-a-uuid`
 reaches a backend. Validating it would be the backend's job. Nor does the route represent QUERY or
 custom (`additionalOperations`) methods: the operator rejects documents that use them.
+
+### Deploying the exercise
+
+On a cluster from `gke-deploy.sh`, in this order (each step's dependencies already exist):
+
+```bash
+K=gke_dev1-486920_us-central1-a_dev-cluster
+./k8s/envoy-gateway/install.sh                      # CRDs (preflight first), controller, GatewayClass
+kubectl --context $K apply -k k8s/flights           # namespace, Gateway, path policy, fixtures
+(cd src/openapi-route-operator && make docker-push) # only when the operator changed; then pin it:
+#   cd k8s/operator && ../../src/openapi-route-operator/bin/kustomize edit set image \
+#     controller=$(cat ../../src/openapi-route-operator/bin/image)
+kubectl --context $K apply -k k8s/operator          # CRD, namespaced RBAC, Deployment
+./flights-publish.sh                                # the document
+kubectl --context $K apply -k k8s/flights/api       # the OpenAPIRoute
+kubectl --context $K -n flights-lab wait openapiroute/flights --for=condition=Ready --timeout=2m
+```
+
+### Acceptance suite (GKE)
+
+The proof that spec edits change live traffic. It runs against a **named** context only, needs
+the exercise deployed and Ready, and puts the baseline document and OpenAPIRoute back when done:
+
+```bash
+cd src/openapi-route-operator
+make test-e2e KUBE_CONTEXT=gke_dev1-486920_us-central1-a_dev-cluster
+```
+
+It republishes variants of `examples/flights/openapi.yaml` through the same ConfigMap as
+`flights-publish.sh`, changes bindings, edits/deletes the generated route, scales the operator to
+zero and back, and sends real requests through its own loopback port-forward (random port, `Host:
+flights.example.test`). Every wait is bounded (90 s; 3 min after a restart). Coverage:
+
+| Area | Specs |
+| --- | --- |
+| Spec edits → traffic | method routing; templated routes; add an operation (no operator restart); change a binding; remove an operation (→ 404); invalid and unsupported edits keep the old route; description-only edit leaves the route untouched; literal path beats template |
+| Outside the contract | wrong Host, undeclared methods, trailing slash, `//`, extra segments, `/flights-extra` → gateway 404; `%2F` → 400 |
+| Ownership and drift | hand edit reverted; deleted route recreated; restart with drift made while down; unrelated route untouched; name collision reported, not taken over |
+| Readiness | missing bound Service → not Ready; fixed → Ready |
+| Removal | empty API → route deleted, no catch-all; OpenAPIRoute deleted → route garbage-collected |
+
+**Reading a failure.** The Ginkgo output names the spec and the request or condition that did not
+converge (e.g. `GET /flights/…: expected "200 from flight-command" got "404 from the gateway"`).
+For every failed spec the suite writes `test/e2e/artifacts/<spec>/`: the OpenAPIRoute and
+HTTPRoutes with their status, the Gateway, the published ConfigMap, namespace events, and the
+operator and Envoy Gateway logs. Start with `openapiroute.yaml`: `SourceValid` says whether the
+document compiled, `RouteApplied` whether the route was written, and `Ready` whether Envoy
+accepted it. A missing `KUBE_CONTEXT` fails the run; it never counts as a pass.
+`E2E_SELFTEST_FAIL=1` adds one deliberately failing spec to check the diagnostics path.
