@@ -1,0 +1,5 @@
+openapi: 3.2.0
+info: { title: unresolved internal ref, version: '1' }
+paths:
+  /flights:
+    $ref: '#/components/pathItems/DoesNotExist'

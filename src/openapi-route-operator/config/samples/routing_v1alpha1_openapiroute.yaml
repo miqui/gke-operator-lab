@@ -1,0 +1,16 @@
+# Minimal OpenAPIRoute. The flights exercise's real one is k8s/flights/api/openapiroute.yaml.
+apiVersion: routing.lab.dev/v1alpha1
+kind: OpenAPIRoute
+metadata:
+  labels:
+    app.kubernetes.io/name: openapi-route-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: openapiroute-sample
+spec:
+  documentRef:
+    name: openapiroute-sample-openapi   # ConfigMap with key openapi.yaml
+  parentRefs:
+    - name: flights
+  defaultBackendRef:
+    name: flight-query
+    port: 8080

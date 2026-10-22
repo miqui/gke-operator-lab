@@ -1,0 +1,12 @@
+openapi: 3.2.0
+info: { title: external url ref, version: '1' }
+paths:
+  /flights:
+    get:
+      operationId: listFlights
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: 'https://schemas.example.test/flight.json' }

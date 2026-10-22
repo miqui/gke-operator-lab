@@ -1,0 +1,18 @@
+openapi: 3.2.0
+info: { title: webhooks and callbacks, version: '1' }
+paths:
+  /subscriptions:
+    post:
+      operationId: subscribe
+      responses: { '201': { description: subscribed } }
+      callbacks:
+        statusChanged:
+          '{$request.body#/callbackUrl}':
+            post:
+              operationId: statusChangedCallback
+              responses: { '200': { description: ack } }
+webhooks:
+  flightDelayed:
+    post:
+      operationId: flightDelayedWebhook
+      responses: { '200': { description: ack } }

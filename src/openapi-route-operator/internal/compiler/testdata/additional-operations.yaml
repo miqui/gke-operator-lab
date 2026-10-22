@@ -1,0 +1,13 @@
+openapi: 3.2.0
+info: { title: additional operations, version: '1' }
+paths:
+  /flights/{flightId}:
+    parameters:
+      - { name: flightId, in: path, required: true, schema: { type: string } }
+    additionalOperations:
+      PURGE:
+        operationId: purgeFlight
+        responses: { '204': { description: purged } }
+    get:
+      operationId: getFlight
+      responses: { '200': { description: ok } }
