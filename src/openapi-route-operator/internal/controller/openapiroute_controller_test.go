@@ -31,6 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	routingv1alpha1 "github.com/miqui/gke-operator-lab/src/openapi-route-operator/api/v1alpha1"
@@ -436,6 +437,29 @@ var _ = Describe("OpenAPIRoute controller", Ordered, func() {
 			Eventually(condition("ready", routingv1alpha1.ConditionReady)).Should(Equal("False/Pending"))
 			acceptRoute("ready")
 			Eventually(condition("ready", routingv1alpha1.ConditionReady)).Should(Equal("True/Ready"))
+		})
+
+		It("requeues while waiting on the Gateway controller, and only then", func() {
+			create("requeue", flightsDoc)
+			Eventually(condition("requeue", routingv1alpha1.ConditionReady)).Should(Equal("False/Pending"))
+			// Called directly (uncached client): the result, not the watch, must bound the wait.
+			// The suite's manager reconciles the same object, so retry status conflicts as the
+			// workqueue would.
+			r := &OpenAPIRouteReconciler{Client: k8sClient, Scheme: testScheme}
+			requeueAfter := func(name string) func() (time.Duration, error) {
+				return func() (time.Duration, error) {
+					res, err := r.Reconcile(ctx, reconcile.Request{NamespacedName: key(name)})
+					return res.RequeueAfter, err
+				}
+			}
+			Eventually(requeueAfter("requeue")).Should(Equal(pendingRequeue))
+
+			acceptRoute("requeue")
+			programGateway()
+			Eventually(requeueAfter("requeue")).Should(BeZero())
+			Expect(condition("requeue", routingv1alpha1.ConditionReady)()).To(Equal("True/Ready"))
+
+			Eventually(requeueAfter("invalid-first")).Should(BeZero(), "a failure that needs a fix must not poll")
 		})
 
 		It("lists webhooks and callbacks as not projected", func() {

@@ -22,6 +22,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -81,6 +82,13 @@ const (
 	eventActionApply            = "Apply"
 	eventActionDelete           = "Delete"
 	conditionMessageTruncSuffix = " …(truncated)"
+
+	// pendingRequeue bounds how long Ready can lag the Gateway controller. Its status writes on
+	// the route and Gateway normally trigger a reconcile through the watches, but on GKE a
+	// status write landing in the same instant as the operator's own read was occasionally
+	// never followed by another reconcile, leaving Ready=Pending indefinitely. Waiting on
+	// another controller should not depend on a single event.
+	pendingRequeue = 5 * time.Second
 )
 
 // OpenAPIRouteReconciler keeps one generated HTTPRoute in line with an OpenAPIRoute's document.
@@ -191,7 +199,20 @@ func (r *OpenAPIRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		}
 	}
 	// A failed apply is retried with backoff; the status above already says why.
-	return ctrl.Result{}, applyErr
+	if applyErr != nil {
+		return ctrl.Result{}, applyErr
+	}
+	if waitingOnGateway(&owner) {
+		return ctrl.Result{RequeueAfter: pendingRequeue}, nil
+	}
+	return ctrl.Result{}, nil
+}
+
+// waitingOnGateway reports whether Ready is only waiting for the Gateway controller to report on
+// the current generations, as opposed to a failure that needs a change from someone.
+func waitingOnGateway(owner *routingv1alpha1.OpenAPIRoute) bool {
+	c := meta.FindStatusCondition(owner.Status.Conditions, routingv1alpha1.ConditionReady)
+	return c != nil && (c.Reason == ReasonPending || c.Reason == ReasonGatewayNotProgrammed)
 }
 
 // compile reads the document and compiles it, recording SourceValid, sourceDigest, and
