@@ -81,48 +81,4 @@ probe) through `repoServer.resources` / `repoServer.livenessProbe` in `k8s/argoc
 
 ## Flights gateway (OpenAPI route operator exercise)
 
-The Envoy proxy Service is ClusterIP; reach it through a loopback port-forward and send the
-listener's hostname. Find the Service by its Gateway labels (its name is generated):
-
-```bash
-K=gke_dev1-486920_us-central1-a_dev-cluster
-SVC=$(kubectl --context $K -n envoy-gateway-system get svc -o name \
-  -l gateway.envoyproxy.io/owning-gateway-namespace=flights-lab,gateway.envoyproxy.io/owning-gateway-name=flights)
-kubectl --context $K -n envoy-gateway-system port-forward --address 127.0.0.1 "$SVC" 8083:80
-
-curl -i -H 'Host: flights.example.test' http://127.0.0.1:8083/flights   # 404 until a route exists
-```
-
-Status at a glance:
-
-```bash
-kubectl --context $K get gatewayclass flights-envoy                     # ACCEPTED True
-kubectl --context $K -n flights-lab get gateway,httproute,openapiroute
-kubectl --context $K -n flights-lab get clienttrafficpolicy flights-paths \
-  -o jsonpath='{.status.ancestors[*].conditions[?(@.type=="Accepted")].status}'
-kubectl --context $K -n envoy-gateway-system logs deploy/envoy-gateway --tail=50
-```
-
-### Removing the exercise
-
-In dependency order, so nothing is left dangling; the cluster and platform stay:
-
-```bash
-kubectl --context $K -n flights-lab delete openapiroute --all     # its HTTPRoutes are garbage-collected
-kubectl --context $K -n flights-lab get httproute                 # confirm: none left
-kubectl --context $K delete -k k8s/flights                        # Gateway, fixtures, namespace
-kubectl --context $K delete -k k8s/operator                       # operator (keeps nothing behind but the CRD)
-kubectl --context $K delete -f k8s/envoy-gateway/gatewayclass.yaml
-helm --kube-context $K -n envoy-gateway-system uninstall eg
-```
-
-Deliberately separate, because each deletes every object of its kinds cluster-wide:
-
-```bash
-kubectl --context $K delete crd openapiroutes.routing.lab.dev     # every OpenAPIRoute
-# Gateway API + Envoy Gateway CRDs (see HELM.md "Envoy Gateway"):
-# (pull first: Helm v4 prints "Pulled:" to stdout when rendering from a registry)
-helm pull oci://docker.io/envoyproxy/gateway-crds-helm --version v1.9.2 --destination /tmp/eg-crds
-helm template eg-crds /tmp/eg-crds/gateway-crds-helm-v1.9.2.tgz \
-  --values k8s/envoy-gateway/crds-values.yaml | kubectl --context $K delete -f -
-```
+Port-forward access, status checks, troubleshooting, and removal order: [ENVOY.md](ENVOY.md).

@@ -16,7 +16,7 @@ Created 2026-10-22 with `PROJECT_ID=dev1-486920 ./gke-deploy.sh`:
 | Control plane access | Authorized network is the operator's public IP at creation time |
 
 Check them with the "Foundation checks" in [KUBECTL.md](KUBECTL.md). Pins that depend on the
-Kubernetes version (Envoy Gateway, Gateway API, envtest) are recorded in [HELM.md](HELM.md).
+Kubernetes version (Envoy Gateway, Gateway API, envtest) are recorded in [ENVOY.md](ENVOY.md).
 
 If `kubectl` times out after your public IP changes, re-authorize the new one (this is the
 command `gke-deploy.sh` prints):

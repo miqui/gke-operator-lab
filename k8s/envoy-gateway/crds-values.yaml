@@ -1,4 +1,5 @@
-# Values for oci://docker.io/envoyproxy/gateway-crds-helm v1.9.2 (release eg-crds). See HELM.md.
+# Values for oci://docker.io/envoyproxy/gateway-crds-helm v1.9.2, rendered with `helm template` and
+# server-side applied by install.sh (field manager eg-crds; too large for a Helm release). See ENVOY.md.
 # The chart installs no Gateway API CRDs unless asked, and defaults to the experimental channel.
 # Standard channel at the chart's bundle version (v1.6.1) matches the operator's go.mod and envtest.
 crds:

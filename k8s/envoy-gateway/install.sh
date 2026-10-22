@@ -2,7 +2,7 @@
 #
 # install.sh — install the Envoy Gateway runtime for the OpenAPI route operator exercise: the
 # Gateway API + Envoy Gateway CRDs, the controller (Helm release eg), and the ClusterIP
-# GatewayClass `flights-envoy`. Pins and rationale: HELM.md "Envoy Gateway".
+# GatewayClass `flights-envoy`. Pins, ownership, and rationale: ENVOY.md.
 #
 # The CRDs are rendered with `helm template` and server-side applied under field manager eg-crds,
 # as Envoy Gateway documents: the bundle is too large for a Helm release Secret (1 MiB limit).
@@ -52,7 +52,7 @@ $foreign
 
 They may be GKE-managed (check: gcloud container clusters describe ... \\
   --format='value(networkConfig.gatewayApiConfig.channel)' should be CHANNEL_DISABLED) or
-installed by something else. Not overwriting them. See HELM.md "Envoy Gateway".
+installed by something else. Not overwriting them. See ENVOY.md "Who owns the Gateway API CRDs".
 EOF
     exit 1
   fi
