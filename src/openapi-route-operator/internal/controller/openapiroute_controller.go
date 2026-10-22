@@ -91,10 +91,11 @@ const (
 // OpenAPIRouteReconciler keeps one generated HTTPRoute in line with an OpenAPIRoute's document.
 type OpenAPIRouteReconciler struct {
 	client.Client
-	// APIReader reads route and Gateway status for readiness straight from the API server.
-	// On GKE the informer cache was seen holding a route's status from before the Gateway
-	// controller's last write, indefinitely (until a restart), which left Ready=Pending for a
-	// route Accepted for its current generation. Defaults to Client when nil.
+	// APIReader reads status straight from the API server: the OpenAPIRoute (whose status
+	// decides whether to write) and the route and Gateway (whose status decides Ready). On GKE
+	// the informer cache was seen missing status-subresource updates indefinitely (until a
+	// restart), both the Gateway controller's and the operator's own, which left Ready=Pending
+	// for a route Accepted for its current generation. Defaults to Client when nil.
 	APIReader client.Reader
 	Scheme    *runtime.Scheme
 	Recorder  events.EventRecorder
@@ -115,8 +116,10 @@ type OpenAPIRouteReconciler struct {
 func (r *OpenAPIRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
 
+	// Uncached: `before` decides whether status is written, so it must be the server's status,
+	// not a cache that may have missed a status write.
 	var owner routingv1alpha1.OpenAPIRoute
-	if err := r.Get(ctx, req.NamespacedName, &owner); err != nil {
+	if err := r.statusReader().Get(ctx, req.NamespacedName, &owner); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 	before := owner.Status.DeepCopy()
