@@ -234,4 +234,4 @@ versions; the acceptance suite's negative-traffic specs cover them.
 - Envoy Gateway: [install with Helm](https://gateway.envoyproxy.io/docs/install/install-helm/),
   [compatibility matrix](https://gateway.envoyproxy.io/news/releases/matrix/)
 - [Gateway API HTTPRoute](https://gateway-api.sigs.k8s.io/api-types/httproute/) (matching and precedence)
-- [PLAN.md](PLAN.md) and `openspec/changes/add-openapi-route-operator/design.md` (decision 9)
+- [PLAN.md](PLAN.md) and `openspec/changes/archive/2026-10-22-add-openapi-route-operator/design.md` (decision 9)

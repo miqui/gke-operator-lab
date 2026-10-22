@@ -353,7 +353,8 @@ On exercise removal, delete the sample custom resource first and verify route ga
 
 ## 11. Relationship to OpenSpec artifacts
 
-Phase 1 is implemented through the OpenSpec change `openspec/changes/add-openapi-route-operator/`
+Phase 1 was implemented through the OpenSpec change `add-openapi-route-operator`, archived on
+2026-10-22 at `openspec/changes/archive/2026-10-22-add-openapi-route-operator/`; its six capabilities now live in `openspec/specs/`
 (proposal, six capability specs, design, tasks). Its `design.md` records the decisions made during
 implementation, including ones that differ from the text above (for example the CRDs are
 server-side applied rather than a Helm release, and status-bearing reads bypass the informer

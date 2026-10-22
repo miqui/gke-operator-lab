@@ -3,7 +3,8 @@
 For engineers changing the operator. Using it — the API, status, and safe spec changes — is in
 [README.md](README.md). The Envoy Gateway runtime it targets is in [ENVOY.md](../../ENVOY.md); the
 exercise's scope and decisions are in [PLAN.md](../../PLAN.md) and
-`openspec/changes/add-openapi-route-operator/` (`design.md` records every non-obvious choice).
+the capability specs in `openspec/specs/` (what the system must do) and the archived change
+`openspec/changes/archive/2026-10-22-add-openapi-route-operator/` (`design.md` records every non-obvious choice).
 
 ## Architecture
 

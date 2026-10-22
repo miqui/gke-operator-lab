@@ -194,7 +194,8 @@ and, per workload, which built-in checks fail at `warning`/`danger`.
 
 An operator that keeps Envoy Gateway's routes in line with an OpenAPI 3.2 document: edit
 `examples/flights/openapi.yaml`, run `./flights-publish.sh`, and the generated HTTPRoute changes.
-Design and scope: [PLAN.md](PLAN.md) and `openspec/changes/add-openapi-route-operator/`. The API,
+Design and scope: [PLAN.md](PLAN.md), the capability specs in `openspec/specs/`, and the archived
+change `openspec/changes/archive/2026-10-22-add-openapi-route-operator/`. The API,
 status conditions, and safe-change rules: [the operator's README](src/openapi-route-operator/README.md).
 Working on the operator (architecture diagrams, tests, releasing): [DEVELOPING.md](src/openapi-route-operator/DEVELOPING.md).
 
