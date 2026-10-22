@@ -122,7 +122,7 @@ The spec file is the only thing a developer edits; nobody writes or patches an H
      - operationId: cancelFlight
        backendRef: { name: flight-command, port: 8080 }
    ```
-3. **Publish.** `kubectl apply -k k8s/flights`. The kustomize `configMapGenerator` uses `disableNameSuffixHash: true`, so the same ConfigMap name gets new data and the OpenAPIRoute reference doesn't change. Later, with GitOps, the publish step is a merged PR that Argo CD syncs.
+3. **Publish.** `./flights-publish.sh` (create-configmap dry-run piped to `kubectl apply`; kustomize can't load a file outside `k8s/flights/`). The ConfigMap name stays `flights-openapi`, so it gets new data and the OpenAPIRoute reference doesn't change. The binding change in step 2 is applied with `kubectl apply -k k8s/flights`. Later, with GitOps, the publish step is a merged PR that Argo CD syncs.
 4. **Operator reconciles.** The ConfigMap change triggers a reconcile through the field index. The operator parses, validates, and compiles the whole plan; `sourceDigest` and `planDigest` both change, so it patches the owned HTTPRoute with a new match `{method: DELETE, path: RegularExpression ^/flights/[^/]+$}` in the flight-command rule. If the edit were description-only, only `sourceDigest` would change and the route would not be written.
 5. **Envoy Gateway programs the proxy.** The HTTPRoute reports Accepted/ResolvedRefs; the operator rolls that into its Ready condition.
 6. **Verify.**
