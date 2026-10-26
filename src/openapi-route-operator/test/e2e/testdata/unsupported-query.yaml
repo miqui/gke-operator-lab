@@ -1,0 +1,12 @@
+# Valid OpenAPI 3.2 that HTTPRoute cannot represent: a QUERY operation. The operator must reject
+# the whole document and keep the previous route.
+openapi: 3.2.0
+info: { title: Flights with QUERY, version: '1' }
+paths:
+  /flights:
+    get:
+      operationId: listFlights
+      responses: { '200': { description: ok } }
+    query:
+      operationId: searchFlights
+      responses: { '200': { description: ok } }

@@ -10,6 +10,12 @@ gcloud container clusters get-credentials dev-cluster --zone=us-central1-a --pro
 kubectl config current-context          # gke_dev1-486920_us-central1-a_dev-cluster
 kubectl get nodes -o wide
 
+# Foundation checks after gke-deploy.sh (see GKE-OPS.md "Cluster facts")
+kubectl get crd | grep gateway.networking.k8s.io        # empty until the Envoy runtime installs them
+gcloud container clusters describe dev-cluster --zone=us-central1-a --project=dev1-486920 \
+  --format='value(networkConfig.gatewayApiConfig.channel,releaseChannel.channel,currentMasterVersion)'
+gcloud artifacts repositories get-iam-policy operator-lab --location=us-central1 --project=dev1-486920
+
 # Everything is an Argo CD Application (see ARGOCD.md)
 kubectl get applications -n argocd -o custom-columns='NAME:.metadata.name,WAVE:.metadata.annotations.argocd\.argoproj\.io/sync-wave,SYNC:.status.sync.status,HEALTH:.status.health.status'
 
@@ -72,3 +78,7 @@ kubectl describe node <node> | grep -A8 'Allocated resources'
 If it recurs, give `argocd-repo-server` a CPU/memory request (and, if needed, a looser liveness
 probe) through `repoServer.resources` / `repoServer.livenessProbe` in `k8s/argocd/argocd-values.yaml`
 - Argo CD manages its own chart, so a hand `kubectl patch` would just be reverted.
+
+## Flights gateway (OpenAPI route operator exercise)
+
+Port-forward access, status checks, troubleshooting, and removal order: [ENVOY.md](ENVOY.md).

@@ -1,0 +1,4 @@
+# Valid, but nothing to route: the operator must delete its route, never leave a catch-all.
+openapi: 3.2.0
+info: { title: No operations, version: '1' }
+paths: {}

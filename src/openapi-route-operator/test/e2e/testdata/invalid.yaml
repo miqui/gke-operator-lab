@@ -1,0 +1,3 @@
+# Not even YAML: an unclosed flow sequence.
+openapi: [3.2.0
+info: { title: broken
