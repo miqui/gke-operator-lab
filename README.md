@@ -1,20 +1,29 @@
 # gke-operator-lab
 
-An environment for developing custom Kubernetes operators and testing third-party operators on
-a dev [GKE](https://cloud.google.com/kubernetes-engine) cluster in GCP project **`dev1-486920`**.
-Argo CD deploys the platform, and Crossplane can provision GCP resources needed by experiments.
+A lab for testing [Envoy Gateway](https://gateway.envoyproxy.io/) routing driven by an
+**OpenAPI 3.2** contract, on a dev [GKE](https://cloud.google.com/kubernetes-engine) cluster in GCP
+project **`dev1-486920`**. A custom operator compiles the contract into a Gateway API HTTPRoute:
+edit `examples/flights/openapi.yaml`, publish it, and Envoy routes requests by the new contract
+without anyone touching the route. A GKE acceptance suite proves that spec edits change live
+traffic. See [OpenAPI route operator](#openapi-route-operator-flights-exercise).
 
-> **Status:** the platform layer is in place. Operator development tooling and repeatable test
-> scenarios are not implemented yet. This repo started as a copy of `miqui/gke-springboot-grpc-o2`. The Java gRPC
-> service, Cloud SQL, Hazelcast, the public Gateway and the Grafana/Prometheus/OpenObserve stack
-> were removed. That repo and its GCP project (`k8s-dev-412419`) are untouched.
+Underneath is a reusable platform: Argo CD deploys it, and Crossplane can provision GCP resources
+needed by experiments.
+
+> **Status:** the platform, the operator (Kubebuilder, with CI) and the GKE acceptance suite are
+> in place; the exercise was verified end to end on 2026-10-22 (see
+> [Verified deployment](#verified-deployment-2026-10-22)). New, unrelated projects start as a fork
+> of this repo. It started as a copy of `miqui/gke-springboot-grpc-o2`. The Java gRPC service,
+> Cloud SQL, Hazelcast, the public Gateway and the Grafana/Prometheus/OpenObserve stack were
+> removed. That repo and its GCP project (`k8s-dev-412419`) are untouched.
 
 The cluster is meant to be **short-lived**: create it for an experiment, tear it down after a few
 hours, recreate it for the next one. Secrets and service accounts live outside it and are reused.
 
 ## Stack URLs
 
-Nothing is public: there is no Ingress, Gateway or LoadBalancer. Every UI is reached through
+Nothing is public: there is no Ingress or LoadBalancer, and the exercise's Envoy Gateway proxy is
+ClusterIP ([ENVOY.md](ENVOY.md)). Every UI is reached through
 `./gke-port-forward.sh`. It tunnels through the GKE API server, which only accepts your IP plus
 Google IAM, and binds on `127.0.0.1` only.
 
@@ -32,9 +41,11 @@ Google IAM, and binds on `127.0.0.1` only.
   the manifests in `k8s/` are not for the given project.
 - **Cluster** (`gke-deploy.sh`): zonal GKE Standard cluster `dev-cluster` in `us-central1-a`,
   `e2-standard-2` nodes autoscaling 3-5, release channel `stable`.
-  - **Private nodes** (no external IPs), with egress through Cloud NAT. Every image is public
-    (ghcr.io, Docker Hub, quay.io, ...), so no registry is needed. The control plane only accepts
-    the operator's public IP (master authorized networks).
+  - **Private nodes** (no external IPs), with egress through Cloud NAT. Third-party images are
+    public (ghcr.io, Docker Hub, quay.io, ...). First-party images (the operator) come from the
+    Artifact Registry repository `operator-lab` in `us-central1`, pinned by digest; the node
+    service account can read that repository only. The control plane only accepts the operator's
+    public IP (master authorized networks).
   - **Dataplane V2** enforces NetworkPolicies. **Workload Identity** gives in-cluster controllers
     Google credentials without key files. Shielded Nodes with secure boot. GKE Managed
     Prometheus is off.
@@ -133,6 +144,9 @@ op run --env-file=.env -- ./gke-secrets-seed.sh
 
 # 4. Tools
 ./gke-port-forward.sh
+
+# 5. The Envoy + OpenAPI 3.2 exercise: Argo CD does not deploy it; follow
+#    "Deploying the exercise" below, then run the acceptance suite
 ```
 
 **Before the first run:** push this repo to `github.com/miqui/gke-operator-lab` (public), branch
